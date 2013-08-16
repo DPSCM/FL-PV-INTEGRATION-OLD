@@ -1,0 +1,79 @@
+// Have a dropdown drive the selection in another dropdown
+// (Useful for cases where the selection of one implies a 
+// selection in another). Given a mapping like
+// "MyDependentValue": ["SomeDrivingValue", "Anotherone"], 
+// when the "child" field is set to one of the values in the 
+// array such as "SomeDrivingValue", the "parent" field will 
+// be set to the key, in this case "MyDependentValue"
+
+(function() {
+
+    var options = [
+    {
+        parent: "Division",
+        child: "Department",
+        map: {
+            "Finance": ["Accounting"],
+            "Human Resources": ["Job Listings", "Career Fairs"]
+        }
+    },
+    {
+        parent: "Food Type",
+        child: "Food",
+        map: {
+            "Fruit": ["Apple", "Banana", "Orange"],
+            "Vegetable": ["Celery", "Lettuce"],
+            "Other": ["Candy Bar", "Potato Chips"]
+        }
+    }
+    // ... additional mappings ...
+   ];
+
+    var updateFields = function() {
+        var opt = $(this).data("opt");
+        var val = $(this).val();
+        $.each(opt.map, function(parentValue, children) {
+            if ($.inArray(val, children) >= 0) {
+                findSelect(opt.parent)
+                .find("option[value=" + parentValue + "]")
+                .attr("selected", "selected")
+                .parents("div:first")
+                .find("input")
+                .val(parentValue);
+                return false;
+            }
+        });
+    };
+
+    var findSelect = function(label) {
+        return $("label[for^=P]")
+            .filter(function() {
+                return $(this).text() == label;
+            })
+            .parent()
+            .find("select")
+    };
+
+    var init = function() {
+        return setTimeout(function() {
+            $.each(options, function(ix, opt) {
+                findSelect(opt.child)
+                .data("opt", opt)
+                .change(updateFields)
+                .change();
+            });
+        }, 1);
+    };
+
+    $(function() {
+        if (!$("#BugFields").length) return;
+        /* Handle switching from view to edit */
+        TabManager.renderView = (function(fnOld) {
+            return function(F) {
+                return fnOld.call(TabManager, F) && init();
+            };
+        })(TabManager.renderView);
+
+        init();
+    });
+})();
